@@ -55,7 +55,7 @@ pub fn format_value(value: &Value, config: &Config, theme: &Theme, indent_level:
         Value::Object(map) => {
             let mut entries: Vec<_> = map.iter().collect();
             if config.sort_keys {
-                entries.sort_by_key(|(k, _)| k.clone());
+                entries.sort_by_key(|(k, _)| *k);
             }
             let mut items = Vec::new();
             for (k, v) in entries {

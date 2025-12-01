@@ -2,7 +2,12 @@ use clap::Parser;
 use crate::config::{Config, load_config};
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(
+    author,
+    version,
+    about = "🎨 Fast, zero fuss JSON formatter and pretty printer for the terminal",
+    long_about = None
+)]
 pub struct CliArgs {
     /// Input files (use - for stdin)
     #[arg(name = "FILE", num_args = 0..)]
@@ -41,7 +46,7 @@ pub struct DisplayArgs {
 
 #[derive(clap::Args, Debug, Clone)]
 pub struct ThemeArgs {
-    #[arg(long, default_value = "default")]
+    #[arg(long, default_value = "default", help = "Color theme: default, solarized, mono, rainbow, ocean, forest, pastel, sakura, cyberpunk, ghibli, evangelion")]
     pub theme: String,
 }
 

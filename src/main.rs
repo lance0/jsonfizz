@@ -1,6 +1,5 @@
 use clap::Parser;
 use jsonfizz::cli::CliArgs;
-use jsonfizz::error::JsonfizzError;
 
 fn main() {
     let args = CliArgs::parse();
