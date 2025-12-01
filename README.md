@@ -145,4 +145,4 @@ PRs welcome! Please format with `cargo fmt` and test with `cargo test`.
 
 ## 📄 License
 
-Licensed under MIT or Apache-2.0.
+Copyright © 2025 Lance. Licensed under MIT or Apache-2.0.

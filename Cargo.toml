@@ -5,6 +5,7 @@ edition = "2021"
 description = "🎨 Fast, zero fuss JSON formatter and pretty printer for the terminal"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/lance0/jsonfizz"
+authors = ["Lance <lance@example.com>"]
 
 [lib]
 path = "src/lib.rs"
