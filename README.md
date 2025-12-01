@@ -3,7 +3,6 @@
 [![Crates.io](https://img.shields.io/crates/v/jsonfizz.svg)](https://crates.io/crates/jsonfizz)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/lance0/jsonfizz)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/lance0/jsonfizz/ci.yml)](https://github.com/lance0/jsonfizz/actions)
 
 Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 
