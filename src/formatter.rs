@@ -71,3 +71,66 @@ pub fn format_value(value: &Value, config: &Config, theme: &Theme, indent_level:
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use crate::config::Config;
+    use crate::theme::Theme;
+
+    #[test]
+    fn test_format_compact() {
+        let value = json!({"key": "value", "number": 42});
+        let config = Config {
+            compact: true,
+            ..Default::default()
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_value(&value, &config, &theme, 0).unwrap();
+        assert_eq!(result, r#"{"key":"value","number":42}"#);
+    }
+
+    #[test]
+    fn test_format_pretty() {
+        let value = json!({"key": "value"});
+        let config = Config {
+            indent: 2,
+            compact: false,
+            ..Default::default()
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_value(&value, &config, &theme, 0).unwrap();
+        assert!(result.contains("{\n"));
+        assert!(result.contains("  \"key\": \"value\""));
+        assert!(result.contains("\n}"));
+    }
+
+    #[test]
+    fn test_max_depth() {
+        let value = json!({"nested": {"deep": {"value": 123}}});
+        let config = Config {
+            max_depth: Some(2),
+            ..Default::default()
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_value(&value, &config, &theme, 0).unwrap();
+        assert!(result.contains("…"));
+    }
+
+    #[test]
+    fn test_sort_keys() {
+        let value = json!({"z": 1, "a": 2, "m": 3});
+        let config = Config {
+            sort_keys: true,
+            ..Default::default()
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_value(&value, &config, &theme, 0).unwrap();
+        // Keys should be sorted: a, m, z
+        let lines: Vec<&str> = result.lines().collect();
+        assert!(lines[1].contains("\"a\""));
+        assert!(lines[2].contains("\"m\""));
+        assert!(lines[3].contains("\"z\""));
+    }
+}

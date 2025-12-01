@@ -18,6 +18,9 @@ pub struct CliArgs {
 
     #[clap(flatten)]
     pub theme_args: ThemeArgs,
+
+    #[arg(long, value_enum, help = "Generate shell completion script")]
+    pub generate_completion: Option<clap_complete::Shell>,
 }
 
 #[derive(clap::Args, Debug, Clone)]

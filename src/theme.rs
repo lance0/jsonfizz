@@ -139,3 +139,49 @@ pub fn colorize(s: &str, kind: TokenKind, theme: &Theme) -> String {
     };
     s.style(style).to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_theme_creation() {
+        // Test that all themes can be created
+        let themes = vec![
+            "default", "solarized", "mono", "rainbow", "ocean",
+            "forest", "pastel", "sakura", "cyberpunk", "ghibli", "evangelion"
+        ];
+
+        for theme_name in themes {
+            let theme = Theme::new(theme_name, false);
+            assert!(theme.is_ok(), "Failed to create theme: {}", theme_name);
+        }
+    }
+
+    #[test]
+    fn test_unknown_theme() {
+        let theme = Theme::new("nonexistent", false);
+        assert!(theme.is_err());
+        assert!(theme.unwrap_err().to_string().contains("Unknown theme"));
+    }
+
+    #[test]
+    fn test_raw_theme() {
+        let theme = Theme::new("default", true).unwrap();
+        // Raw theme should have no styles
+        assert_eq!(theme.key, owo_colors::Style::new());
+        assert_eq!(theme.string, owo_colors::Style::new());
+        assert_eq!(theme.number, owo_colors::Style::new());
+        assert_eq!(theme.boolean, owo_colors::Style::new());
+        assert_eq!(theme.null, owo_colors::Style::new());
+        assert_eq!(theme.punctuation, owo_colors::Style::new());
+    }
+
+    #[test]
+    fn test_colorize() {
+        let theme = Theme::new("rainbow", false).unwrap();
+        let result = colorize("test", TokenKind::Key, &theme);
+        // Should contain ANSI color codes
+        assert!(result.contains("\x1b["));
+    }
+}

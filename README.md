@@ -2,6 +2,8 @@
 
 [![Crates.io](https://img.shields.io/crates/v/jsonfizz.svg)](https://crates.io/crates/jsonfizz)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/lance0/jsonfizz)
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/lance0/jsonfizz/ci.yml)](https://github.com/lance0/jsonfizz/actions)
 
 Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 
@@ -71,6 +73,11 @@ jsonfizz data.json --theme sakura
 jsonfizz data.json --theme cyberpunk
 jsonfizz data.json --theme ghibli
 jsonfizz data.json --theme evangelion
+
+# Generate shell completions
+jsonfizz --generate-completion bash > ~/.bash_completion.d/jsonfizz
+jsonfizz --generate-completion zsh > ~/.zsh/_jsonfizz
+jsonfizz --generate-completion fish > ~/.config/fish/completions/jsonfizz.fish
 ```
 
 ## ⚙️ Configuration
@@ -118,6 +125,7 @@ Options:
       --get <GET>
       --raw
       --theme <THEME>                          Color theme: default, solarized, mono, rainbow, ocean, forest, pastel, sakura, cyberpunk, ghibli, evangelion [default: default]
+      --generate-completion <SHELL>            Generate shell completion script [possible values: bash, elvish, fish, powershell, zsh]
   -h, --help                                   Print help
   -V, --version                                Print version
 ```
