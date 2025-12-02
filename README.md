@@ -8,12 +8,16 @@ Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 
 ## ✨ Features
 
-- 🚀 **Blazing fast** - Written in Rust
-- 🎨 **Beautiful themes** - Multiple color schemes
+- 🚀 **Blazing fast** - Written in Rust with streaming processing
+- 🎨 **Beautiful themes** - 11 color schemes including anime themes
 - 🔍 **JSON path queries** - Extract specific values
 - 📏 **Depth limiting** - Handle large JSON gracefully
 - 🎯 **Multiple inputs** - Files, stdin, or pipes
 - ⚙️ **Configurable** - TOML config file support
+- 📄 **Multiple formats** - JSON and YAML output
+- 🐚 **Shell completion** - Auto-completion for bash/zsh/fish
+- 📊 **Performance benchmarks** - Built-in performance testing
+- 📈 **Progress indicators** - Feedback for large file processing
 
 ## 📦 Installation
 
@@ -55,6 +59,9 @@ jsonfizz data.json --sort-keys
 # Output in different formats
 jsonfizz data.json --format yaml
 jsonfizz data.json --format json
+
+# Run performance benchmarks
+jsonfizz --benchmark
 ```
 
 ### Color themes
@@ -128,7 +135,9 @@ Options:
       --get <GET>
       --raw
       --theme <THEME>                          Color theme: default, solarized, mono, rainbow, ocean, forest, pastel, sakura, cyberpunk, ghibli, evangelion [default: default]
+      --format <FORMAT>                        Output format: json, yaml [default: json]
       --generate-completion <SHELL>            Generate shell completion script [possible values: bash, elvish, fish, powershell, zsh]
+      --benchmark                              Run performance benchmarks
   -h, --help                                   Print help
   -V, --version                                Print version
 ```
