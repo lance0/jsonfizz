@@ -116,6 +116,64 @@ fn apply_get(value: &serde_json::Value, get_path: &Option<String>) -> Result<ser
     }
 }
 
+fn convert_to_csv(value: &serde_json::Value) -> Result<String, JsonfizzError> {
+    match value {
+        serde_json::Value::Array(arr) => {
+            if arr.is_empty() {
+                return Ok(String::new());
+            }
+
+            // Collect all unique keys from all objects
+            let mut all_keys = std::collections::BTreeSet::new();
+            for item in arr {
+                if let serde_json::Value::Object(obj) = item {
+                    for key in obj.keys() {
+                        all_keys.insert(key.clone());
+                    }
+                }
+            }
+
+            let keys: Vec<String> = all_keys.into_iter().collect();
+
+            // Create CSV writer
+            let mut wtr = csv::WriterBuilder::new()
+                .has_headers(true)
+                .from_writer(vec![]);
+
+            // Write headers
+            wtr.write_record(&keys)
+                .map_err(|e| JsonfizzError::Yaml(format!("CSV header write error: {}", e)))?;
+
+            // Write data rows
+            for item in arr {
+                if let serde_json::Value::Object(obj) = item {
+                    let mut row = Vec::new();
+                    for key in &keys {
+                        let value = obj.get(key)
+                            .and_then(|v| match v {
+                                serde_json::Value::String(s) => Some(s.clone()),
+                                serde_json::Value::Number(n) => Some(n.to_string()),
+                                serde_json::Value::Bool(b) => Some(b.to_string()),
+                                serde_json::Value::Null => Some(String::new()),
+                                _ => Some(v.to_string()),
+                            })
+                            .unwrap_or_default();
+                        row.push(value);
+                    }
+                    wtr.write_record(&row)
+                        .map_err(|e| JsonfizzError::Yaml(format!("CSV row write error: {}", e)))?;
+                }
+            }
+
+            let csv_data = wtr.into_inner()
+                .map_err(|e| JsonfizzError::Yaml(format!("CSV writer error: {}", e)))?;
+            String::from_utf8(csv_data)
+                .map_err(|e| JsonfizzError::Yaml(format!("CSV encoding error: {}", e)))
+        }
+        _ => Err(JsonfizzError::Yaml("CSV output requires a JSON array of objects".to_string())),
+    }
+}
+
 fn format_output(value: &serde_json::Value, config: &crate::config::Config, theme: &crate::theme::Theme) -> Result<String, JsonfizzError> {
     match config.format.as_str() {
         "json" => crate::formatter::format_value(value, config, theme, 0),
@@ -129,7 +187,10 @@ fn format_output(value: &serde_json::Value, config: &crate::config::Config, them
                 .map_err(|e| JsonfizzError::Yaml(format!("TOML serialization error: {}", e)))?;
             Ok(toml)
         }
-        _ => Err(JsonfizzError::Config(format!("Unsupported format: {}. Supported: json, yaml, toml", config.format))),
+        "csv" => {
+            convert_to_csv(value)
+        }
+        _ => Err(JsonfizzError::Config(format!("Unsupported format: {}. Supported: json, yaml, toml, csv", config.format))),
     }
 }
 
@@ -248,6 +309,31 @@ version: 1.0"#;
         let value = parse_input(yaml_input, "yaml").unwrap();
         assert_eq!(value["name"], "test");
         assert_eq!(value["version"], 1.0);
+    }
+
+    #[test]
+    fn test_format_csv() {
+        let value = json!([
+            {"name": "Alice", "age": 30, "city": "NYC"},
+            {"name": "Bob", "age": 25, "city": "LA"}
+        ]);
+        let config = Config {
+            indent: 2,
+            sort_keys: false,
+            compact: false,
+            max_depth: None,
+            max_string_length: None,
+            get: None,
+            theme: "mono".to_string(),
+            raw: false,
+            format: "csv".to_string(),
+            input_format: "json".to_string(),
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_output(&value, &config, &theme).unwrap();
+        assert!(result.contains("age,city,name"));
+        assert!(result.contains("30,NYC,Alice"));
+        assert!(result.contains("25,LA,Bob"));
     }
 
     #[test]

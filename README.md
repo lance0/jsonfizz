@@ -57,12 +57,15 @@ jsonfizz data.json --indent 4
 # Sort object keys
 jsonfizz data.json --sort-keys
 
-# Format conversion (JSON ↔ YAML ↔ TOML)
+# Format conversion (JSON ↔ YAML ↔ TOML ↔ CSV)
 # Read TOML, output as JSON
 jsonfizz config.toml --input-format toml --format json
 
 # Read YAML, output as TOML
 echo 'name: test' | jsonfizz --input-format yaml --format toml
+
+# Convert JSON array to CSV
+echo '[{"name":"Alice","age":30},{"name":"Bob","age":25}]' | jsonfizz --format csv
 
 # Read JSON, output as YAML
 jsonfizz data.json --format yaml
@@ -144,7 +147,7 @@ Options:
       --max-string-length <MAX_STRING_LENGTH>
       --get <GET>
       --raw
-      --format <FORMAT>                        Output format: json, yaml, toml [default: json]
+      --format <FORMAT>                        Output format: json, yaml, toml, csv [default: json]
       --input-format <INPUT_FORMAT>            Input format: json, yaml, toml [default: json]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help

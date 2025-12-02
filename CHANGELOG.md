@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TOML Output Format**: Add `--format toml` option for TOML serialization
 - **TOML Input Support**: Add `--input-format toml` option for reading TOML files
 - **YAML Input Support**: Add `--input-format yaml` option for reading YAML files
-- **Complete Format Matrix**: Full bidirectional conversion between JSON, YAML, and TOML
+- **CSV Output Support**: Add `--format csv` option for converting JSON arrays to CSV
+- **Complete Format Matrix**: Full bidirectional conversion between JSON, YAML, and TOML, plus CSV output
 - **Shell Completion**: Generate shell completion scripts with `--generate-completion`
 - **Performance Benchmarks**: Add `--benchmark` flag for comprehensive performance testing
 - **Streaming Input Processing**: Improved memory efficiency for large stdin inputs
