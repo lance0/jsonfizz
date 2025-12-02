@@ -14,6 +14,7 @@ Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 - 📏 **Depth limiting** - Handle large JSON gracefully
 - 🎯 **Multiple inputs** - Files, stdin, or pipes
 - ⚙️ **Configurable** - TOML config file support
+- 📄 **Format conversion** - JSON ↔ YAML ↔ TOML bidirectional
 - 📄 **Multiple formats** - JSON and YAML output
 - 🐚 **Shell completion** - Auto-completion for bash/zsh/fish
 - 📊 **Performance benchmarks** - Built-in performance testing
@@ -56,7 +57,7 @@ jsonfizz data.json --indent 4
 # Sort object keys
 jsonfizz data.json --sort-keys
 
-# Input and output formats
+# Format conversion (JSON ↔ YAML ↔ TOML)
 # Read TOML, output as JSON
 jsonfizz config.toml --input-format toml --format json
 
