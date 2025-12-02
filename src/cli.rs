@@ -62,8 +62,14 @@ pub struct DisplayArgs {
     #[arg(long, help = "Input format: json, yaml, toml [default: json]")]
     pub input_format: Option<String>,
 
+    #[arg(long, help = "Watch file for changes and reformat on modify")]
+    pub watch: Option<String>,
+
     #[arg(long, value_enum, help = "Color output control")]
     pub color: Option<ColorChoice>,
+
+    #[arg(long, help = "Output compact (minified) JSON")]
+    pub compact: bool,
 }
 
 #[derive(clap::Args, Debug, Clone)]

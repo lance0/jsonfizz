@@ -8,8 +8,10 @@ pub mod theme;
 pub use error::JsonfizzError;
 
 use std::io::{self, Read, Write};
-use indicatif::{ProgressBar, ProgressStyle};
+use std::path::Path;
+use std::sync::mpsc::channel;
 use std::time::Instant;
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 pub fn run<W: Write>(args: cli::CliArgs, mut writer: W) -> Result<(), JsonfizzError> {
     let config = args.to_config();
@@ -253,6 +255,75 @@ pub fn run_benchmarks() {
     println!("  Ratio: {:.2}x", yaml_time.as_secs_f64() / json_time.as_secs_f64());
 
     println!("\n✅ Benchmarks complete!");
+}
+
+pub fn run_watch(path: String, args: cli::CliArgs) -> Result<(), JsonfizzError> {
+    let config = args.to_config();
+
+    // Initial format
+    println!("🔄 Initial format of {}", path);
+    if let Err(e) = process_file(&path, &config) {
+        eprintln!("Initial format error: {}", e);
+    }
+
+    // Setup watcher
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res| {
+        // Forward events through the channel for processing in the main loop
+        if tx.send(res).is_err() {
+            eprintln!("Watch channel closed unexpectedly");
+        }
+    }).map_err(|e| JsonfizzError::Config(format!("Failed to start watcher: {}", e)))?;
+    watcher.watch(Path::new(&path), RecursiveMode::NonRecursive)
+        .map_err(|e| JsonfizzError::Config(format!("Failed to watch {}: {}", path, e)))?;
+
+    println!("👀 Watching {} for changes (Ctrl+C to exit)...", path);
+
+    loop {
+        match rx.recv() {
+            Ok(Ok(event)) => {
+                match event.kind {
+                    EventKind::Modify(_) | EventKind::Create(_) => {
+                        println!("\n🔄 File changed, reformatting...");
+                        if let Err(e) = process_file(&path, &config) {
+                            eprintln!("Reformat error: {}", e);
+                        }
+                    }
+                    EventKind::Remove(_) => {
+                        eprintln!("File removed; stopping watcher.");
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Err(e)) => {
+                eprintln!("Watch event error: {:?}", e);
+            }
+            Err(e) => {
+                eprintln!("Watch channel error: {:?}", e);
+                break;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn process_file(path: &str, config: &crate::config::Config) -> Result<(), JsonfizzError> {
+    let input = std::fs::read_to_string(path)?;
+    let value: serde_json::Value = parse_input(&input, &config.input_format)?;
+    let value = apply_get(&value, &config.get)?;
+    let use_colors = match config.color {
+        Some(cli::ColorChoice::Always) => true,
+        Some(cli::ColorChoice::Never) => false,
+        Some(cli::ColorChoice::Auto) | None => atty::is(atty::Stream::Stdout),
+    };
+    let theme = crate::theme::Theme::new(&config.theme, config.raw || !use_colors)?;
+    let output = format_output(&value, config, &theme)?;
+    println!("--- file updated ---");
+    println!("{}", output);
+    println!("");
+    Ok(())
 }
 
 #[cfg(test)]
