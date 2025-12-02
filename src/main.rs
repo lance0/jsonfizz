@@ -13,6 +13,12 @@ fn main() {
         return;
     }
 
+    // Handle benchmarking
+    if args.benchmark {
+        jsonfizz::run_benchmarks();
+        return;
+    }
+
     if let Err(e) = jsonfizz::run(args) {
         eprintln!("error: {}", e);
         std::process::exit(e.exit_code());

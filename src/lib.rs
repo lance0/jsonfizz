@@ -111,6 +111,56 @@ fn format_output(value: &serde_json::Value, config: &crate::config::Config, them
     }
 }
 
+pub fn run_benchmarks() {
+    println!("🚀 Running jsonfizz performance benchmarks...\n");
+
+    // Benchmark 1: Small JSON formatting
+    let small_json = r#"{"name":"test","value":42,"items":[1,2,3]}"#;
+    let start = Instant::now();
+    for _ in 0..1000 {
+        let _: serde_json::Value = serde_json::from_str(small_json).unwrap();
+    }
+    let parse_time = start.elapsed();
+
+    let start = Instant::now();
+    for _ in 0..1000 {
+        let value: serde_json::Value = serde_json::from_str(small_json).unwrap();
+        let mut config = crate::config::Config::default();
+        config.theme = "mono".to_string();
+        let theme = crate::theme::Theme::new("mono", false).unwrap();
+        format_output(&value, &config, &theme).unwrap();
+    }
+    let format_time = start.elapsed();
+
+    println!("📊 Small JSON ({} chars):", small_json.len());
+    println!("  Parse (1000x): {:.2}ms", parse_time.as_millis());
+    println!("  Format (1000x): {:.2}ms", format_time.as_millis());
+    println!("  Total: {:.2}ms", (parse_time + format_time).as_millis());
+
+    // Benchmark 3: YAML vs JSON output
+    let test_value: serde_json::Value = serde_json::from_str(r#"{"test":"data","array":[1,2,3]}"#).unwrap();
+    let test_theme = crate::theme::Theme::new("default", false).unwrap();
+
+    let start = Instant::now();
+    let mut config_json = crate::config::Config::default();
+    config_json.format = "json".to_string();
+    format_output(&test_value, &config_json, &test_theme).unwrap();
+    let json_time = start.elapsed();
+
+    let start = Instant::now();
+    let mut config_yaml = crate::config::Config::default();
+    config_yaml.format = "yaml".to_string();
+    format_output(&test_value, &config_yaml, &test_theme).unwrap();
+    let yaml_time = start.elapsed();
+
+    println!("\n📊 Format comparison:");
+    println!("  JSON: {:.2}ms", json_time.as_millis());
+    println!("  YAML: {:.2}ms", yaml_time.as_millis());
+    println!("  Ratio: {:.2}x", yaml_time.as_secs_f64() / json_time.as_secs_f64());
+
+    println!("\n✅ Benchmarks complete!");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,8 +172,15 @@ mod tests {
     fn test_format_yaml() {
         let value = json!({"name": "test", "version": 1.0});
         let config = Config {
+            indent: 2,
+            sort_keys: false,
+            compact: false,
+            max_depth: None,
+            max_string_length: None,
+            get: None,
+            theme: "mono".to_string(),
+            raw: false,
             format: "yaml".to_string(),
-            ..Default::default()
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();

@@ -13,7 +13,7 @@ pub struct PartialConfig {
     pub format: Option<String>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub indent: usize,
     pub sort_keys: bool,
@@ -24,6 +24,22 @@ pub struct Config {
     pub theme: String,
     pub raw: bool,
     pub format: String,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            indent: 2,
+            sort_keys: false,
+            compact: false,
+            max_depth: None,
+            max_string_length: None,
+            get: None,
+            theme: "default".to_string(),
+            raw: false,
+            format: "json".to_string(),
+        }
+    }
 }
 
 impl Config {

@@ -21,6 +21,9 @@ pub struct CliArgs {
 
     #[arg(long, value_enum, help = "Generate shell completion script")]
     pub generate_completion: Option<clap_complete::Shell>,
+
+    #[arg(long, help = "Run performance benchmarks")]
+    pub benchmark: bool,
 }
 
 #[derive(clap::Args, Debug, Clone)]
