@@ -10,6 +10,7 @@ pub struct PartialConfig {
     pub max_depth: Option<usize>,
     pub max_string_length: Option<usize>,
     pub theme: Option<String>,
+    pub format: Option<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -22,6 +23,7 @@ pub struct Config {
     pub get: Option<String>,
     pub theme: String,
     pub raw: bool,
+    pub format: String,
 }
 
 impl Config {
@@ -35,6 +37,7 @@ impl Config {
             get: cli.display.get.clone(),
             theme: cli.theme_args.theme.clone(),
             raw: cli.display.raw,
+            format: cli.display.format.clone(),
         };
         if let Some(p) = partial {
             if let Some(v) = p.indent {
@@ -51,6 +54,9 @@ impl Config {
             }
             if let Some(v) = p.theme {
                 config.theme = v;
+            }
+            if let Some(v) = p.format {
+                config.format = v;
             }
         }
         config

@@ -19,10 +19,10 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
     if files.is_empty() {
         let mut input = String::new();
         io::stdin().lock().read_to_string(&mut input)?;
-        let value: serde_json::Value = serde_json::from_str(&input)?;
-        let value = apply_get(&value, &config.get)?;
-        let output = crate::formatter::format_value(&value, config, theme, 0)?;
-        println!("{}", output);
+            let value: serde_json::Value = serde_json::from_str(&input)?;
+            let value = apply_get(&value, &config.get)?;
+            let output = format_output(&value, config, theme)?;
+            println!("{}", output);
     } else {
         for file in files {
             let input = if file == "-" {
@@ -34,7 +34,7 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
             };
             let value: serde_json::Value = serde_json::from_str(&input)?;
             let value = apply_get(&value, &config.get)?;
-            let output = crate::formatter::format_value(&value, config, theme, 0)?;
+            let output = format_output(&value, config, theme)?;
             println!("{}", output);
         }
     }
@@ -47,5 +47,51 @@ fn apply_get(value: &serde_json::Value, get_path: &Option<String>) -> Result<ser
         crate::path::resolve(value, &path)
     } else {
         Ok(value.clone())
+    }
+}
+
+fn format_output(value: &serde_json::Value, config: &crate::config::Config, theme: &crate::theme::Theme) -> Result<String, JsonfizzError> {
+    match config.format.as_str() {
+        "json" => crate::formatter::format_value(value, config, theme, 0),
+        "yaml" => {
+            let yaml = serde_yaml::to_string(value)
+                .map_err(|e| JsonfizzError::Yaml(format!("YAML serialization error: {}", e)))?;
+            Ok(yaml)
+        }
+        _ => Err(JsonfizzError::Config(format!("Unsupported format: {}. Supported: json, yaml", config.format))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use crate::config::Config;
+    use crate::theme::Theme;
+
+    #[test]
+    fn test_format_yaml() {
+        let value = json!({"name": "test", "version": 1.0});
+        let config = Config {
+            format: "yaml".to_string(),
+            ..Default::default()
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_output(&value, &config, &theme).unwrap();
+        assert!(result.contains("name: test"));
+        assert!(result.contains("version: 1.0"));
+    }
+
+    #[test]
+    fn test_format_unsupported() {
+        let value = json!({"test": "value"});
+        let config = Config {
+            format: "xml".to_string(),
+            ..Default::default()
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_output(&value, &config, &theme);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unsupported format"));
     }
 }

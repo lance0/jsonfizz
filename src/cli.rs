@@ -45,6 +45,9 @@ pub struct DisplayArgs {
 
     #[arg(long)]
     pub raw: bool,
+
+    #[arg(long, default_value = "json", help = "Output format: json, yaml")]
+    pub format: String,
 }
 
 #[derive(clap::Args, Debug, Clone)]

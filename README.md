@@ -51,6 +51,10 @@ jsonfizz data.json --indent 4
 
 # Sort object keys
 jsonfizz data.json --sort-keys
+
+# Output in different formats
+jsonfizz data.json --format yaml
+jsonfizz data.json --format json
 ```
 
 ### Color themes
@@ -141,6 +145,7 @@ Options:
       --max-string-length <MAX_STRING_LENGTH>  Truncate long strings
       --get <GET>                              JSON path query (e.g., data.items[0])
       --raw                                    Disable colors
+      --format <FORMAT>                        Output format: json, yaml [default: json]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help
   -V, --version                                Print version

@@ -5,6 +5,9 @@ pub enum JsonfizzError {
     #[error("Invalid JSON: {0}")]
     Parse(#[from] serde_json::Error),
 
+    #[error("YAML error: {0}")]
+    Yaml(String),
+
     #[error("Path error: {0}")]
     Path(String),
 
@@ -18,7 +21,7 @@ pub enum JsonfizzError {
 impl JsonfizzError {
     pub fn exit_code(&self) -> i32 {
         match self {
-            JsonfizzError::Parse(_) | JsonfizzError::Path(_) => 1,
+            JsonfizzError::Parse(_) | JsonfizzError::Yaml(_) | JsonfizzError::Path(_) => 1,
             _ => 2,
         }
     }
