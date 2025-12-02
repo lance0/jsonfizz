@@ -56,10 +56,15 @@ jsonfizz data.json --indent 4
 # Sort object keys
 jsonfizz data.json --sort-keys
 
-# Output in different formats
+# Input and output formats
+# Read TOML, output as JSON
+jsonfizz config.toml --input-format toml --format json
+
+# Read JSON, output as YAML
 jsonfizz data.json --format yaml
+
+# Read JSON, output as TOML
 jsonfizz data.json --format toml
-jsonfizz data.json --format json
 
 # Run performance benchmarks
 jsonfizz --benchmark
@@ -135,8 +140,9 @@ Options:
       --max-string-length <MAX_STRING_LENGTH>
       --get <GET>
       --raw
+      --format <FORMAT>                        Output format: json, yaml, toml [default: json]
+      --input-format <INPUT_FORMAT>            Input format: json, toml [default: json]
       --theme <THEME>                          Color theme: default, solarized, mono, rainbow, ocean, forest, pastel, sakura, cyberpunk, ghibli, evangelion [default: default]
-      --format <FORMAT>                        Output format: json, yaml [default: json]
       --generate-completion <SHELL>            Generate shell completion script [possible values: bash, elvish, fish, powershell, zsh]
       --benchmark                              Run performance benchmarks
   -h, --help                                   Print help
@@ -156,6 +162,7 @@ Options:
       --get <GET>                              JSON path query (e.g., data.items[0])
       --raw                                    Disable colors
       --format <FORMAT>                        Output format: json, yaml, toml [default: json]
+      --input-format <INPUT_FORMAT>            Input format: json, toml [default: json]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help
   -V, --version                                Print version

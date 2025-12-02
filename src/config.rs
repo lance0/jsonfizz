@@ -24,6 +24,7 @@ pub struct Config {
     pub theme: String,
     pub raw: bool,
     pub format: String,
+    pub input_format: String,
 }
 
 impl Default for Config {
@@ -38,6 +39,7 @@ impl Default for Config {
             theme: "default".to_string(),
             raw: false,
             format: "json".to_string(),
+            input_format: "json".to_string(),
         }
     }
 }
@@ -54,6 +56,7 @@ impl Config {
             theme: cli.theme_args.theme.clone(),
             raw: cli.display.raw,
             format: cli.display.format.clone(),
+            input_format: cli.display.input_format.clone().unwrap_or_else(|| "json".to_string()),
         };
         if let Some(p) = partial {
             if let Some(v) = p.indent {

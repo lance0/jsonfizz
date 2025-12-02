@@ -54,10 +54,10 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
             eprintln!("Read {} MB in {:.2}s", total_bytes / (1024 * 1024), start_time.elapsed().as_secs_f32());
         }
 
-        // Try to parse as JSON
+        // Try to parse based on input format
         let input_str = std::str::from_utf8(&buffer)
             .map_err(|e| JsonfizzError::Yaml(format!("Invalid UTF-8 in input: {}", e)))?;
-        let value: serde_json::Value = serde_json::from_str(input_str)?;
+        let value: serde_json::Value = parse_input(input_str, &config.input_format)?;
         let value = apply_get(&value, &config.get)?;
         let output = format_output(&value, config, theme)?;
         println!("{}", output);
@@ -81,13 +81,28 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
 
                 std::fs::read_to_string(file)?
             };
-            let value: serde_json::Value = serde_json::from_str(&input)?;
+            let value: serde_json::Value = parse_input(&input, &config.input_format)?;
             let value = apply_get(&value, &config.get)?;
             let output = format_output(&value, config, theme)?;
             println!("{}", output);
         }
     }
     Ok(())
+}
+
+fn parse_input(input: &str, format: &str) -> Result<serde_json::Value, JsonfizzError> {
+    match format {
+        "json" => serde_json::from_str(input)
+            .map_err(|e| JsonfizzError::Parse(e)),
+        "toml" => {
+            let toml_value: toml::Value = toml::from_str(input)
+                .map_err(|e| JsonfizzError::Yaml(format!("TOML parse error: {}", e)))?;
+            // Convert TOML to JSON Value
+            serde_json::to_value(toml_value)
+                .map_err(|e| JsonfizzError::Yaml(format!("TOML to JSON conversion error: {}", e)))
+        }
+        _ => Err(JsonfizzError::Config(format!("Unsupported input format: {}. Supported: json, toml", format))),
+    }
 }
 
 fn apply_get(value: &serde_json::Value, get_path: &Option<String>) -> Result<serde_json::Value, JsonfizzError> {
@@ -186,6 +201,7 @@ mod tests {
             theme: "mono".to_string(),
             raw: false,
             format: "yaml".to_string(),
+            input_format: "json".to_string(),
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
@@ -206,11 +222,21 @@ mod tests {
             theme: "mono".to_string(),
             raw: false,
             format: "toml".to_string(),
+            input_format: "json".to_string(),
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
         assert!(result.contains("name = \"test\""));
         assert!(result.contains("version = 1.0"));
+    }
+
+    #[test]
+    fn test_parse_toml_input() {
+        let toml_input = r#"name = "test"
+version = 1.0"#;
+        let value = parse_input(toml_input, "toml").unwrap();
+        assert_eq!(value["name"], "test");
+        assert_eq!(value["version"], 1.0);
     }
 
     #[test]

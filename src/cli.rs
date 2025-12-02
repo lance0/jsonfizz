@@ -51,6 +51,9 @@ pub struct DisplayArgs {
 
     #[arg(long, default_value = "json", help = "Output format: json, yaml, toml")]
     pub format: String,
+
+    #[arg(long, help = "Input format: json, toml [default: json]")]
+    pub input_format: Option<String>,
 }
 
 #[derive(clap::Args, Debug, Clone)]
