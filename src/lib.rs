@@ -17,19 +17,51 @@ pub fn run(args: cli::CliArgs) -> Result<(), JsonfizzError> {
 
 fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crate::theme::Theme) -> Result<(), JsonfizzError> {
     if files.is_empty() {
-        let mut input = String::new();
-        io::stdin().lock().read_to_string(&mut input)?;
-            let value: serde_json::Value = serde_json::from_str(&input)?;
-            let value = apply_get(&value, &config.get)?;
-            let output = format_output(&value, config, theme)?;
-            println!("{}", output);
+        // For stdin, read efficiently and warn about large inputs
+        let stdin = io::stdin();
+        let mut reader = stdin.lock();
+        let mut buffer = Vec::new();
+
+        // Read in chunks to avoid memory issues with extremely large inputs
+        let mut chunk = [0; 8192]; // 8KB chunks
+        loop {
+            let bytes_read = reader.read(&mut chunk)?;
+            if bytes_read == 0 {
+                break;
+            }
+            buffer.extend_from_slice(&chunk[..bytes_read]);
+
+            // Warn if input is getting very large (>10MB)
+            if buffer.len() > 10 * 1024 * 1024 {
+                eprintln!("Warning: Large input detected ({} MB). Consider using --max-depth or processing in chunks.", buffer.len() / (1024 * 1024));
+            }
+        }
+
+        // Try to parse as JSON
+        let input_str = std::str::from_utf8(&buffer)
+            .map_err(|e| JsonfizzError::Yaml(format!("Invalid UTF-8 in input: {}", e)))?;
+        let value: serde_json::Value = serde_json::from_str(input_str)?;
+        let value = apply_get(&value, &config.get)?;
+        let output = format_output(&value, config, theme)?;
+        println!("{}", output);
     } else {
         for file in files {
             let input = if file == "-" {
-                let mut s = String::new();
-                io::stdin().lock().read_to_string(&mut s)?;
-                s
+                let stdin = io::stdin();
+                let mut reader = stdin.lock();
+                let mut buffer = Vec::new();
+                reader.read_to_end(&mut buffer)?;
+                String::from_utf8(buffer)
+                    .map_err(|e| JsonfizzError::Yaml(format!("Invalid UTF-8 in stdin: {}", e)))?
             } else {
+                // Check file size before reading
+                let metadata = std::fs::metadata(file)?;
+                let file_size = metadata.len();
+
+                if file_size > 50 * 1024 * 1024 { // 50MB
+                    eprintln!("Warning: Large file detected ({} MB): {}. Consider using --max-depth for better performance.", file_size / (1024 * 1024), file);
+                }
+
                 std::fs::read_to_string(file)?
             };
             let value: serde_json::Value = serde_json::from_str(&input)?;

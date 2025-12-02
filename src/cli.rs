@@ -34,10 +34,10 @@ pub struct DisplayArgs {
     #[arg(short = 'c', long)]
     pub compact: bool,
 
-    #[arg(long, value_parser = parse_max_depth)]
+    #[arg(long)]
     pub max_depth: Option<usize>,
 
-    #[arg(long, value_parser = parse_max_string_length)]
+    #[arg(long)]
     pub max_string_length: Option<usize>,
 
     #[arg(long)]
@@ -56,21 +56,7 @@ pub struct ThemeArgs {
     pub theme: String,
 }
 
-fn parse_max_depth(s: &str) -> Result<Option<usize>, String> {
-    if s == "0" {
-        Ok(None)
-    } else {
-        s.parse().map(Some).map_err(|_| format!("Invalid max_depth '{}'", s))
-    }
-}
 
-fn parse_max_string_length(s: &str) -> Result<Option<usize>, String> {
-    if s == "0" {
-        Ok(None)
-    } else {
-        s.parse().map(Some).map_err(|_| format!("Invalid max_string_length '{}'", s))
-    }
-}
 
 impl CliArgs {
     pub fn to_config(&self) -> Config {
