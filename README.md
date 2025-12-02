@@ -28,6 +28,39 @@ Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 cargo install jsonfizz
 ```
 
+## 📚 Library Usage
+
+You can use `jsonfizz` as a Rust library in your own projects:
+
+```toml
+[dependencies]
+jsonfizz = "0.2.0"
+serde_json = "1.0"
+```
+
+```rust
+use jsonfizz::{config::Config, theme::Theme, formatter::format_value};
+use serde_json::json;
+
+fn main() {
+    let value = json!({"name": "jsonfizz", "awesome": true});
+    
+    // Configure formatting options
+    let config = Config {
+        indent: 4,
+        theme: "ocean".to_string(),
+        ..Config::default()
+    };
+    
+    // Initialize theme
+    let theme = Theme::new(&config.theme, false).unwrap();
+    
+    // Format the value
+    let formatted = format_value(&value, &config, &theme, 0).unwrap();
+    println!("{}", formatted);
+}
+```
+
 ## 🚀 Usage
 
 ### Basic formatting
@@ -44,6 +77,9 @@ cat large.json | jsonfizz
 
 ### Advanced features
 ```bash
+# Watch file for changes and reformat on the fly
+jsonfizz data.json --watch
+
 # Extract specific values with JSON path
 jsonfizz response.json --get data.items[0].name
 
@@ -74,7 +110,6 @@ jsonfizz data.csv --input-format csv --format json
 
 # Validate against a JSON Schema
 jsonfizz data.json --schema schema.json
-# (Schemas are validated locally; remote $ref fetching is not performed.)
 
 # Control color output
 jsonfizz data.json --color never    # Never use colors
@@ -119,15 +154,67 @@ jsonfizz --generate-completion fish > ~/.config/fish/completions/jsonfizz.fish
 
 ## ⚙️ Configuration
 
-Create `~/.jsonfizz.toml`:
+Create `~/.config/jsonfizz/config.toml` or `~/.jsonfizz.toml` to set persistent defaults.
+
+**Full Example:**
 
 ```toml
-indent = 4
+# Indentation size (spaces)
+indent = 2
+
+# Sort keys alphabetically (true/false)
 sort_keys = true
-theme = "rainbow"
+
+# Default color theme
+theme = "ocean"
+
+# Default output format (json, yaml, toml, csv)
+format = "json"
+
+# Max depth to recurse (0 = unlimited)
+max_depth = 0
+
+# Max string length before truncation (0 = unlimited)
+max_string_length = 0
+
+# Optional: Path to a default JSON schema for validation
+# schema = "/path/to/schema.json"
 ```
 
 CLI flags override config.
+
+## 🔍 JSON Path Syntax
+
+The `--get` flag supports a simple dot-notation syntax for extracting values:
+
+- `key`: Access a property of an object.
+- `array[index]`: Access an element of an array.
+- `data.items[0].name`: Nested access.
+
+**Examples:**
+- `users[0].id`
+- `config.server.port`
+- `rows[5]`
+
+## ✅ Schema Validation
+
+Validate your JSON against a standard [JSON Schema](https://json-schema.org/).
+
+```bash
+jsonfizz data.json --schema schema.json
+```
+
+If validation fails, `jsonfizz` will print a clear error message indicating the location of the violation and exit with code 1.
+
+## ❓ Troubleshooting
+
+**"Error: UTF-8"**
+`jsonfizz` currently only supports valid UTF-8 input. Ensure your files are encoded correctly.
+
+**"Watch limit reached"**
+If using `--watch` on Linux, you might hit the system's file watcher limit. Increase it with:
+`sysctl fs.inotify.max_user_watches=524288`
+
 
 ## 🎨 Themes
 
