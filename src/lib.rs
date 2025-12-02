@@ -9,6 +9,8 @@ pub use error::JsonfizzError;
 
 use std::io::{self, Read};
 
+use std::time::Instant;
+
 pub fn run(args: cli::CliArgs) -> Result<(), JsonfizzError> {
     let config = args.to_config();
     let theme = crate::theme::Theme::new(&config.theme, config.raw)?;
@@ -21,20 +23,35 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
         let stdin = io::stdin();
         let mut reader = stdin.lock();
         let mut buffer = Vec::new();
+        let start_time = Instant::now();
 
         // Read in chunks to avoid memory issues with extremely large inputs
         let mut chunk = [0; 8192]; // 8KB chunks
+        let mut total_bytes = 0;
+        let mut show_progress = false;
+
         loop {
             let bytes_read = reader.read(&mut chunk)?;
             if bytes_read == 0 {
                 break;
             }
             buffer.extend_from_slice(&chunk[..bytes_read]);
+            total_bytes += bytes_read;
 
-            // Warn if input is getting very large (>10MB)
-            if buffer.len() > 10 * 1024 * 1024 {
-                eprintln!("Warning: Large input detected ({} MB). Consider using --max-depth or processing in chunks.", buffer.len() / (1024 * 1024));
+            // Show progress for large inputs (>5MB)
+            if total_bytes > 5 * 1024 * 1024 && !show_progress {
+                show_progress = true;
+                eprintln!("Reading large input from stdin... ({} MB)", total_bytes / (1024 * 1024));
             }
+
+            // Warn if input is getting very large (>50MB)
+            if total_bytes > 50 * 1024 * 1024 && start_time.elapsed().as_secs() > 5 {
+                eprintln!("Warning: Very large input detected ({} MB). Processing may be slow.", total_bytes / (1024 * 1024));
+            }
+        }
+
+        if show_progress {
+            eprintln!("Read {} MB in {:.2}s", total_bytes / (1024 * 1024), start_time.elapsed().as_secs_f32());
         }
 
         // Try to parse as JSON
