@@ -6,7 +6,7 @@ description = "🎨 Fast, zero fuss JSON formatter and pretty printer for the te
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/lance0/jsonfizz"
 authors = ["lance0 <lance@lance0.com>"]
-keywords = ["json", "formatter", "cli", "pretty-print", "yaml", "toml", "csv", "devtools"]
+keywords = ["json", "formatter", "cli", "yaml", "toml"]
 categories = ["command-line-utilities", "development-tools", "encoding"]
 
 [lib]
