@@ -27,8 +27,9 @@ pub fn format_value(value: &Value, config: &Config, theme: &Theme, indent_level:
         Value::Number(n) => Ok(colorize(&n.to_string(), TokenKind::Number, theme)),
         Value::String(s) => {
             let display = if let Some(max_len) = config.max_string_length {
-                if s.len() > max_len {
-                    format!("{}{}", &s[0..(max_len.saturating_sub(1))], "…")
+                if s.chars().count() > max_len {
+                    let truncated: String = s.chars().take(max_len.saturating_sub(1)).collect();
+                    format!("{}…", truncated)
                 } else {
                     s.clone()
                 }

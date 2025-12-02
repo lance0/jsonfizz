@@ -7,17 +7,28 @@ pub mod theme;
 
 pub use error::JsonfizzError;
 
-use std::io::{self, Read};
-
+use std::io::{self, Read, Write};
+use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Instant;
 
-pub fn run(args: cli::CliArgs) -> Result<(), JsonfizzError> {
+pub fn run<W: Write>(args: cli::CliArgs, mut writer: W) -> Result<(), JsonfizzError> {
     let config = args.to_config();
-    let theme = crate::theme::Theme::new(&config.theme, config.raw)?;
-    process_inputs(&args.files, &config, &theme)
+
+    // Determine if colors should be used
+    let use_colors = match config.color {
+        Some(cli::ColorChoice::Always) => true,
+        Some(cli::ColorChoice::Never) => false,
+        Some(cli::ColorChoice::Auto) | None => {
+            // Auto-detect: use colors if stdout is TTY and NO_COLOR is not set
+            std::env::var("NO_COLOR").is_err() && atty::is(atty::Stream::Stdout)
+        }
+    };
+
+    let theme = crate::theme::Theme::new(&config.theme, config.raw || !use_colors)?;
+    process_inputs(&args.files, &config, &theme, &mut writer)
 }
 
-fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crate::theme::Theme) -> Result<(), JsonfizzError> {
+fn process_inputs<W: Write>(files: &[String], config: &crate::config::Config, theme: &crate::theme::Theme, writer: &mut W) -> Result<(), JsonfizzError> {
     if files.is_empty() {
         // For stdin, read efficiently and warn about large inputs
         let stdin = io::stdin();
@@ -60,7 +71,7 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
         let value: serde_json::Value = parse_input(input_str, &config.input_format)?;
         let value = apply_get(&value, &config.get)?;
         let output = format_output(&value, config, theme)?;
-        println!("{}", output);
+        writeln!(writer, "{}", output)?;
     } else {
         for file in files {
             let input = if file == "-" {
@@ -84,7 +95,7 @@ fn process_inputs(files: &[String], config: &crate::config::Config, theme: &crat
             let value: serde_json::Value = parse_input(&input, &config.input_format)?;
             let value = apply_get(&value, &config.get)?;
             let output = format_output(&value, config, theme)?;
-            println!("{}", output);
+            writeln!(writer, "{}", output)?;
         }
     }
     Ok(())
@@ -265,6 +276,7 @@ mod tests {
             raw: false,
             format: "yaml".to_string(),
             input_format: "json".to_string(),
+            color: None,
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
@@ -286,6 +298,7 @@ mod tests {
             raw: false,
             format: "toml".to_string(),
             input_format: "json".to_string(),
+            color: None,
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
@@ -328,6 +341,7 @@ version: 1.0"#;
             raw: false,
             format: "csv".to_string(),
             input_format: "json".to_string(),
+            color: None,
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();

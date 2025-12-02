@@ -25,6 +25,7 @@ pub struct Config {
     pub raw: bool,
     pub format: String,
     pub input_format: String,
+    pub color: Option<crate::cli::ColorChoice>,
 }
 
 impl Default for Config {
@@ -40,6 +41,7 @@ impl Default for Config {
             raw: false,
             format: "json".to_string(),
             input_format: "json".to_string(),
+            color: None,
         }
     }
 }
@@ -57,6 +59,7 @@ impl Config {
             raw: cli.display.raw,
             format: cli.display.format.clone(),
             input_format: cli.display.input_format.clone().unwrap_or_else(|| "json".to_string()),
+            color: cli.display.color.clone(),
         };
         if let Some(p) = partial {
             if let Some(v) = p.indent {

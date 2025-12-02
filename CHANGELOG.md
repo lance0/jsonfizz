@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build Warnings**: Removed unused imports and fixed compilation warnings
 - **Config Merging**: Fixed format field handling in configuration
 - **Error Types**: Added Yaml error variant for proper error handling
+- **UTF-8 Safety**: Fixed max_string_length to handle multi-byte characters properly
+- **Color Control**: Added --color flag with auto/always/never options and NO_COLOR support
+
+### Changed
+- **README Accuracy**: Removed misleading "streaming processing" claims
+- **Color Output**: Now respects TTY detection and NO_COLOR environment variable
 
 ### Documentation
 - **README**: Updated with new features, examples, and badges

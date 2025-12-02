@@ -8,13 +8,13 @@ Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 
 ## ✨ Features
 
-- 🚀 **Blazing fast** - Written in Rust with streaming processing
+- 🚀 **Blazing fast** - Written in Rust
 - 🎨 **Beautiful themes** - 11 color schemes including anime themes
 - 🔍 **JSON path queries** - Extract specific values
 - 📏 **Depth limiting** - Handle large JSON gracefully
 - 🎯 **Multiple inputs** - Files, stdin, or pipes
 - ⚙️ **Configurable** - TOML config file support
-- 📄 **Format conversion** - JSON ↔ YAML ↔ TOML bidirectional
+- 📄 **Format conversion** - JSON ↔ YAML ↔ TOML, CSV output
 - 📄 **Multiple formats** - JSON and YAML output
 - 🐚 **Shell completion** - Auto-completion for bash/zsh/fish
 - 📊 **Performance benchmarks** - Built-in performance testing
@@ -66,6 +66,11 @@ echo 'name: test' | jsonfizz --input-format yaml --format toml
 
 # Convert JSON array to CSV
 echo '[{"name":"Alice","age":30},{"name":"Bob","age":25}]' | jsonfizz --format csv
+
+# Control color output
+jsonfizz data.json --color never    # Never use colors
+jsonfizz data.json --color always   # Always use colors
+jsonfizz data.json --color auto     # Auto-detect (default)
 
 # Read JSON, output as YAML
 jsonfizz data.json --format yaml
@@ -149,6 +154,7 @@ Options:
       --raw
       --format <FORMAT>                        Output format: json, yaml, toml, csv [default: json]
       --input-format <INPUT_FORMAT>            Input format: json, yaml, toml [default: json]
+      --color <COLOR>                          Color output control: auto, always, never [default: auto]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help
   -V, --version                                Print version

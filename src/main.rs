@@ -19,7 +19,7 @@ fn main() {
         return;
     }
 
-    if let Err(e) = jsonfizz::run(args) {
+    if let Err(e) = jsonfizz::run(args, std::io::stdout()) {
         eprintln!("error: {}", e);
         std::process::exit(e.exit_code());
     }

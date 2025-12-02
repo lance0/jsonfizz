@@ -1,6 +1,13 @@
 use clap::Parser;
 use crate::config::{Config, load_config};
 
+#[derive(clap::ValueEnum, Clone, Debug)]
+pub enum ColorChoice {
+    Auto,
+    Always,
+    Never,
+}
+
 #[derive(Parser, Debug)]
 #[command(
     author,
@@ -54,6 +61,9 @@ pub struct DisplayArgs {
 
     #[arg(long, help = "Input format: json, yaml, toml [default: json]")]
     pub input_format: Option<String>,
+
+    #[arg(long, value_enum, help = "Color output control")]
+    pub color: Option<ColorChoice>,
 }
 
 #[derive(clap::Args, Debug, Clone)]
