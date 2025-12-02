@@ -12,6 +12,8 @@ use std::path::Path;
 use std::sync::mpsc::channel;
 use std::time::Instant;
 use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use jsonschema::JSONSchema;
+use serde_json::Value;
 
 pub fn run<W: Write>(args: cli::CliArgs, mut writer: W) -> Result<(), JsonfizzError> {
     let config = args.to_config();
@@ -69,9 +71,10 @@ fn process_inputs<W: Write>(files: &[String], config: &crate::config::Config, th
 
         // Try to parse based on input format
         let input_str = std::str::from_utf8(&buffer)
-            .map_err(|e| JsonfizzError::Yaml(format!("Invalid UTF-8 in input: {}", e)))?;
+            .map_err(|e| JsonfizzError::parse_error("UTF-8", e.to_string(), None, None))?;
         let value: serde_json::Value = parse_input(input_str, &config.input_format)?;
         let value = apply_get(&value, &config.get)?;
+        validate_schema(&value, config)?;
         let output = format_output(&value, config, theme)?;
         writeln!(writer, "{}", output)?;
     } else {
@@ -82,7 +85,7 @@ fn process_inputs<W: Write>(files: &[String], config: &crate::config::Config, th
                 let mut buffer = Vec::new();
                 reader.read_to_end(&mut buffer)?;
                 String::from_utf8(buffer)
-                    .map_err(|e| JsonfizzError::Yaml(format!("Invalid UTF-8 in stdin: {}", e)))?
+                    .map_err(|e| JsonfizzError::parse_error("UTF-8", e.utf8_error().to_string(), None, None))?
             } else {
                 // Check file size before reading
                 let metadata = std::fs::metadata(file)?;
@@ -96,6 +99,7 @@ fn process_inputs<W: Write>(files: &[String], config: &crate::config::Config, th
             };
             let value: serde_json::Value = parse_input(&input, &config.input_format)?;
             let value = apply_get(&value, &config.get)?;
+            validate_schema(&value, config)?;
             let output = format_output(&value, config, theme)?;
             writeln!(writer, "{}", output)?;
         }
@@ -105,19 +109,100 @@ fn process_inputs<W: Write>(files: &[String], config: &crate::config::Config, th
 
 fn parse_input(input: &str, format: &str) -> Result<serde_json::Value, JsonfizzError> {
     match format {
-        "json" => serde_json::from_str(input)
-            .map_err(|e| JsonfizzError::Parse(e)),
-        "yaml" => serde_yaml::from_str(input)
-            .map_err(|e| JsonfizzError::Yaml(format!("YAML parse error: {}", e))),
+        "json" => serde_json::from_str(input).map_err(json_parse_error),
+        "yaml" => serde_yaml::from_str(input).map_err(yaml_parse_error),
         "toml" => {
-            let toml_value: toml::Value = toml::from_str(input)
-                .map_err(|e| JsonfizzError::Yaml(format!("TOML parse error: {}", e)))?;
-            // Convert TOML to JSON Value
+            let toml_value: toml::Value = toml::from_str(input).map_err(toml_parse_error)?;
             serde_json::to_value(toml_value)
-                .map_err(|e| JsonfizzError::Yaml(format!("TOML to JSON conversion error: {}", e)))
+                .map_err(|e| JsonfizzError::Data(format!("TOML to JSON conversion error: {}", e)))
         }
-        _ => Err(JsonfizzError::Config(format!("Unsupported input format: {}. Supported: json, yaml, toml", format))),
+        "csv" => parse_csv_to_json(input),
+        _ => Err(JsonfizzError::Config(format!("Unsupported input format: {}. Supported: json, yaml, toml, csv", format))),
     }
+}
+
+fn json_parse_error(err: serde_json::Error) -> JsonfizzError {
+    let line = if err.line() > 0 { Some(err.line()) } else { None };
+    let column = if err.column() > 0 { Some(err.column() + 1) } else { None };
+    JsonfizzError::parse_error("JSON", err.to_string(), line, column)
+}
+
+fn yaml_parse_error(err: serde_yaml::Error) -> JsonfizzError {
+    let (line, column) = err.location()
+        .map(|loc| (Some(loc.line() + 1), Some(loc.column() + 1)))
+        .unwrap_or((None, None));
+    JsonfizzError::parse_error("YAML", err.to_string(), line, column)
+}
+
+fn toml_parse_error(err: toml::de::Error) -> JsonfizzError {
+    let (line, column) = err.line_col()
+        .map(|(l, c)| (Some(l + 1), Some(c + 1)))
+        .unwrap_or((None, None));
+    JsonfizzError::parse_error("TOML", err.to_string(), line, column)
+}
+
+fn csv_parse_error(err: csv::Error) -> JsonfizzError {
+    let (line, column) = if let Some(pos) = err.position() {
+        (Some(pos.line() as usize), None)
+    } else {
+        (None, None)
+    };
+    JsonfizzError::parse_error("CSV", err.to_string(), line, column)
+}
+
+fn parse_csv_to_json(input: &str) -> Result<Value, JsonfizzError> {
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(input.as_bytes());
+
+    let headers = reader.headers().map_err(csv_parse_error)?.clone();
+    let mut rows = Vec::new();
+
+    for (index, record) in reader.records().enumerate() {
+        let record = record.map_err(csv_parse_error)?;
+        if record.len() != headers.len() {
+            return Err(JsonfizzError::parse_error(
+                "CSV",
+                format!("Record {} has {} fields, expected {}", index + 1, record.len(), headers.len()),
+                Some(index + 2), // +2 to account for header line
+                None,
+            ));
+        }
+
+        let mut obj = serde_json::Map::new();
+        for (header, value) in headers.iter().zip(record.iter()) {
+            obj.insert(header.to_string(), Value::String(value.to_string()));
+        }
+        rows.push(Value::Object(obj));
+    }
+
+    Ok(Value::Array(rows))
+}
+
+fn validate_schema(value: &Value, config: &crate::config::Config) -> Result<(), JsonfizzError> {
+    let schema_path = match &config.schema {
+        Some(path) => path,
+        None => return Ok(()),
+    };
+
+    let schema_str = std::fs::read_to_string(schema_path)?;
+    let schema_json: Value = serde_json::from_str(&schema_str).map_err(json_parse_error)?;
+    let compiled = JSONSchema::compile(&schema_json)
+        .map_err(|e| JsonfizzError::Config(format!("Invalid JSON Schema in {}: {}", schema_path, e)))?;
+
+    if let Err(errors) = compiled.validate(value) {
+        let detail = errors.into_iter().next().map(|err| {
+            let path = err.instance_path.to_string();
+            if path.is_empty() {
+                format!("Schema validation failed: {}", err)
+            } else {
+                format!("Schema validation failed at {}: {}", path, err)
+            }
+        }).unwrap_or_else(|| "Schema validation failed".to_string());
+        return Err(JsonfizzError::Config(detail));
+    }
+
+    Ok(())
 }
 
 fn apply_get(value: &serde_json::Value, get_path: &Option<String>) -> Result<serde_json::Value, JsonfizzError> {
@@ -155,7 +240,7 @@ fn convert_to_csv(value: &serde_json::Value) -> Result<String, JsonfizzError> {
 
             // Write headers
             wtr.write_record(&keys)
-                .map_err(|e| JsonfizzError::Yaml(format!("CSV header write error: {}", e)))?;
+                .map_err(|e| JsonfizzError::Data(format!("CSV header write error: {}", e)))?;
 
             // Write data rows
             for item in arr {
@@ -174,16 +259,16 @@ fn convert_to_csv(value: &serde_json::Value) -> Result<String, JsonfizzError> {
                         row.push(value);
                     }
                     wtr.write_record(&row)
-                        .map_err(|e| JsonfizzError::Yaml(format!("CSV row write error: {}", e)))?;
+                        .map_err(|e| JsonfizzError::Data(format!("CSV row write error: {}", e)))?;
                 }
             }
 
             let csv_data = wtr.into_inner()
-                .map_err(|e| JsonfizzError::Yaml(format!("CSV writer error: {}", e)))?;
+                .map_err(|e| JsonfizzError::Data(format!("CSV writer error: {}", e)))?;
             String::from_utf8(csv_data)
-                .map_err(|e| JsonfizzError::Yaml(format!("CSV encoding error: {}", e)))
+                .map_err(|e| JsonfizzError::parse_error("UTF-8", e.to_string(), None, None))
         }
-        _ => Err(JsonfizzError::Yaml("CSV output requires a JSON array of objects".to_string())),
+        _ => Err(JsonfizzError::Config("CSV output requires a JSON array of objects".to_string())),
     }
 }
 
@@ -192,12 +277,12 @@ fn format_output(value: &serde_json::Value, config: &crate::config::Config, them
         "json" => crate::formatter::format_value(value, config, theme, 0),
         "yaml" => {
             let yaml = serde_yaml::to_string(value)
-                .map_err(|e| JsonfizzError::Yaml(format!("YAML serialization error: {}", e)))?;
+                .map_err(|e| JsonfizzError::Data(format!("YAML serialization error: {}", e)))?;
             Ok(yaml)
         }
         "toml" => {
             let toml = toml::to_string(value)
-                .map_err(|e| JsonfizzError::Yaml(format!("TOML serialization error: {}", e)))?;
+                .map_err(|e| JsonfizzError::Data(format!("TOML serialization error: {}", e)))?;
             Ok(toml)
         }
         "csv" => {
@@ -313,6 +398,7 @@ fn process_file(path: &str, config: &crate::config::Config) -> Result<(), Jsonfi
     let input = std::fs::read_to_string(path)?;
     let value: serde_json::Value = parse_input(&input, &config.input_format)?;
     let value = apply_get(&value, &config.get)?;
+    validate_schema(&value, config)?;
     let use_colors = match config.color {
         Some(cli::ColorChoice::Always) => true,
         Some(cli::ColorChoice::Never) => false,
@@ -332,6 +418,8 @@ mod tests {
     use serde_json::json;
     use crate::config::Config;
     use crate::theme::Theme;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_format_yaml() {
@@ -348,6 +436,7 @@ mod tests {
             format: "yaml".to_string(),
             input_format: "json".to_string(),
             color: None,
+            schema: None,
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
@@ -370,6 +459,7 @@ mod tests {
             format: "toml".to_string(),
             input_format: "json".to_string(),
             color: None,
+            schema: None,
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
@@ -413,6 +503,7 @@ version: 1.0"#;
             format: "csv".to_string(),
             input_format: "json".to_string(),
             color: None,
+            schema: None,
         };
         let theme = Theme::new("mono", false).unwrap();
         let result = format_output(&value, &config, &theme).unwrap();
@@ -432,5 +523,68 @@ version: 1.0"#;
         let result = format_output(&value, &config, &theme);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Unsupported format"));
+    }
+
+    #[test]
+    fn test_parse_csv_input() {
+        let csv_input = "name,age\nAlice,30\nBob,25\n";
+        let value = parse_input(csv_input, "csv").unwrap();
+        assert_eq!(value.as_array().unwrap().len(), 2);
+        assert_eq!(value[0]["name"], "Alice");
+        assert_eq!(value[1]["age"], "25");
+    }
+
+    #[test]
+    fn test_parse_error_contains_location() {
+        let result = parse_input("{\"name\":}", "json");
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("line"));
+        assert!(msg.contains("column"));
+    }
+
+    #[test]
+    fn test_schema_validation_success() {
+        let schema = json!({
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+                "name": { "type": "string" },
+                "age": { "type": "integer" }
+            }
+        });
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "{}", schema.to_string()).unwrap();
+
+        let config = Config {
+            schema: Some(file.path().to_string_lossy().to_string()),
+            ..Default::default()
+        };
+        let value = json!({"name": "Alice", "age": 30});
+        validate_schema(&value, &config).unwrap();
+    }
+
+    #[test]
+    fn test_schema_validation_failure() {
+        let schema = json!({
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+                "name": { "type": "string" }
+            }
+        });
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "{}", schema.to_string()).unwrap();
+
+        let config = Config {
+            schema: Some(file.path().to_string_lossy().to_string()),
+            ..Default::default()
+        };
+        let value = json!({"age": 4});
+        let result = validate_schema(&value, &config);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("Schema validation failed") || msg.contains("/age"));
     }
 }

@@ -8,7 +8,7 @@ pub fn format_value(value: &Value, config: &Config, theme: &Theme, indent_level:
     let child_indent = " ".repeat((indent_level + 1) * config.indent);
 
     if config.compact {
-        return Ok(serde_json::to_string(value).map_err(|e| JsonfizzError::Parse(e))?);
+        return Ok(serde_json::to_string(value).map_err(|e| JsonfizzError::parse_error("JSON", e.to_string(), None, None))?);
     }
 
     if let Some(max_d) = config.max_depth {

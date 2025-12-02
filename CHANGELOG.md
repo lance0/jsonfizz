@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shell Completion**: Generate shell completion scripts with `--generate-completion`
 - **Performance Benchmarks**: Add `--benchmark` flag for comprehensive performance testing
 - **Streaming Input Processing**: Improved memory efficiency for large stdin inputs
+- **CSV Input Support**: Add `--input-format csv` option for reading CSV files as JSON arrays
+- **JSON Schema Validation**: Optional `--schema` flag for validating inputs against a JSON Schema
+- **Parse Error Context**: Parse errors now report line and column numbers
+- **Lean Schema Dependency**: Schema validation uses a minimal dependency set (no HTTP fetching) to keep the binary small
 - **Progress Indicators**: Show progress for large file processing (>5MB)
 - **File Size Warnings**: Alert users about large files (>50MB)
 - **Anime Themes**: Added 5 new anime-inspired color themes (sakura, cyberpunk, ghibli, evangelion)

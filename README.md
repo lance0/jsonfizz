@@ -15,7 +15,9 @@ Fast, zero fuss JSON formatter and pretty printer for the terminal. ✨
 - 🎯 **Multiple inputs** - Files, stdin, or pipes
 - ⚙️ **Configurable** - TOML config file support
 - 📄 **Format conversion** - JSON ↔ YAML ↔ TOML, CSV output
+- 📑 **CSV friendly** - Read CSV and convert to JSON
 - 📄 **Multiple formats** - JSON and YAML output
+- ✅ **Schema checks** - Optional JSON Schema validation
 - 🐚 **Shell completion** - Auto-completion for bash/zsh/fish
 - 📊 **Performance benchmarks** - Built-in performance testing
 - 📈 **Progress indicators** - Feedback for large file processing
@@ -66,6 +68,13 @@ echo 'name: test' | jsonfizz --input-format yaml --format toml
 
 # Convert JSON array to CSV
 echo '[{"name":"Alice","age":30},{"name":"Bob","age":25}]' | jsonfizz --format csv
+
+# Read CSV and output JSON
+jsonfizz data.csv --input-format csv --format json
+
+# Validate against a JSON Schema
+jsonfizz data.json --schema schema.json
+# (Schemas are validated locally; remote $ref fetching is not performed.)
 
 # Control color output
 jsonfizz data.json --color never    # Never use colors
@@ -153,7 +162,8 @@ Options:
       --get <GET>
       --raw
       --format <FORMAT>                        Output format: json, yaml, toml, csv [default: json]
-      --input-format <INPUT_FORMAT>            Input format: json, yaml, toml [default: json]
+      --input-format <INPUT_FORMAT>            Input format: json, yaml, toml, csv [default: json]
+      --schema <SCHEMA>                        Path to a JSON Schema file for validation
       --color <COLOR>                          Color output control: auto, always, never [default: auto]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help

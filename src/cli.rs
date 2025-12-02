@@ -59,7 +59,7 @@ pub struct DisplayArgs {
     #[arg(long, default_value = "json", help = "Output format: json, yaml, toml, csv")]
     pub format: String,
 
-    #[arg(long, help = "Input format: json, yaml, toml [default: json]")]
+    #[arg(long, help = "Input format: json, yaml, toml, csv [default: json]")]
     pub input_format: Option<String>,
 
     #[arg(long, help = "Watch file for changes and reformat on modify")]
@@ -68,8 +68,8 @@ pub struct DisplayArgs {
     #[arg(long, value_enum, help = "Color output control")]
     pub color: Option<ColorChoice>,
 
-    #[arg(long, help = "Output compact (minified) JSON")]
-    pub compact: bool,
+    #[arg(long, help = "Path to a JSON Schema file for validation")]
+    pub schema: Option<String>,
 }
 
 #[derive(clap::Args, Debug, Clone)]

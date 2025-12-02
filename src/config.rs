@@ -11,6 +11,7 @@ pub struct PartialConfig {
     pub max_string_length: Option<usize>,
     pub theme: Option<String>,
     pub format: Option<String>,
+    pub schema: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -26,6 +27,7 @@ pub struct Config {
     pub format: String,
     pub input_format: String,
     pub color: Option<crate::cli::ColorChoice>,
+    pub schema: Option<String>,
 }
 
 impl Default for Config {
@@ -42,6 +44,7 @@ impl Default for Config {
             format: "json".to_string(),
             input_format: "json".to_string(),
             color: None,
+            schema: None,
         }
     }
 }
@@ -60,6 +63,7 @@ impl Config {
             format: cli.display.format.clone(),
             input_format: cli.display.input_format.clone().unwrap_or_else(|| "json".to_string()),
             color: cli.display.color.clone(),
+            schema: cli.display.schema.clone(),
         };
         if let Some(p) = partial {
             if let Some(v) = p.indent {
@@ -79,6 +83,9 @@ impl Config {
             }
             if let Some(v) = p.format {
                 config.format = v;
+            }
+            if let Some(v) = p.schema {
+                config.schema = Some(v);
             }
         }
         config
