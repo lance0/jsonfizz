@@ -107,7 +107,12 @@ fn format_output(value: &serde_json::Value, config: &crate::config::Config, them
                 .map_err(|e| JsonfizzError::Yaml(format!("YAML serialization error: {}", e)))?;
             Ok(yaml)
         }
-        _ => Err(JsonfizzError::Config(format!("Unsupported format: {}. Supported: json, yaml", config.format))),
+        "toml" => {
+            let toml = toml::to_string(value)
+                .map_err(|e| JsonfizzError::Yaml(format!("TOML serialization error: {}", e)))?;
+            Ok(toml)
+        }
+        _ => Err(JsonfizzError::Config(format!("Unsupported format: {}. Supported: json, yaml, toml", config.format))),
     }
 }
 
@@ -186,6 +191,26 @@ mod tests {
         let result = format_output(&value, &config, &theme).unwrap();
         assert!(result.contains("name: test"));
         assert!(result.contains("version: 1.0"));
+    }
+
+    #[test]
+    fn test_format_toml() {
+        let value = json!({"name": "test", "version": 1.0});
+        let config = Config {
+            indent: 2,
+            sort_keys: false,
+            compact: false,
+            max_depth: None,
+            max_string_length: None,
+            get: None,
+            theme: "mono".to_string(),
+            raw: false,
+            format: "toml".to_string(),
+        };
+        let theme = Theme::new("mono", false).unwrap();
+        let result = format_output(&value, &config, &theme).unwrap();
+        assert!(result.contains("name = \"test\""));
+        assert!(result.contains("version = 1.0"));
     }
 
     #[test]

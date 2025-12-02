@@ -49,7 +49,7 @@ pub struct DisplayArgs {
     #[arg(long)]
     pub raw: bool,
 
-    #[arg(long, default_value = "json", help = "Output format: json, yaml")]
+    #[arg(long, default_value = "json", help = "Output format: json, yaml, toml")]
     pub format: String,
 }
 

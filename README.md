@@ -58,6 +58,7 @@ jsonfizz data.json --sort-keys
 
 # Output in different formats
 jsonfizz data.json --format yaml
+jsonfizz data.json --format toml
 jsonfizz data.json --format json
 
 # Run performance benchmarks
@@ -154,7 +155,7 @@ Options:
       --max-string-length <MAX_STRING_LENGTH>  Truncate long strings
       --get <GET>                              JSON path query (e.g., data.items[0])
       --raw                                    Disable colors
-      --format <FORMAT>                        Output format: json, yaml [default: json]
+      --format <FORMAT>                        Output format: json, yaml, toml [default: json]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help
   -V, --version                                Print version
