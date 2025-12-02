@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **YAML Output Format**: Add `--format yaml` option for YAML serialization
 - **TOML Output Format**: Add `--format toml` option for TOML serialization
 - **TOML Input Support**: Add `--input-format toml` option for reading TOML files
+- **YAML Input Support**: Add `--input-format yaml` option for reading YAML files
 - **Shell Completion**: Generate shell completion scripts with `--generate-completion`
 - **Performance Benchmarks**: Add `--benchmark` flag for comprehensive performance testing
 - **Streaming Input Processing**: Improved memory efficiency for large stdin inputs

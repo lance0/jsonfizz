@@ -60,6 +60,9 @@ jsonfizz data.json --sort-keys
 # Read TOML, output as JSON
 jsonfizz config.toml --input-format toml --format json
 
+# Read YAML, output as TOML
+echo 'name: test' | jsonfizz --input-format yaml --format toml
+
 # Read JSON, output as YAML
 jsonfizz data.json --format yaml
 
@@ -141,28 +144,7 @@ Options:
       --get <GET>
       --raw
       --format <FORMAT>                        Output format: json, yaml, toml [default: json]
-      --input-format <INPUT_FORMAT>            Input format: json, toml [default: json]
-      --theme <THEME>                          Color theme: default, solarized, mono, rainbow, ocean, forest, pastel, sakura, cyberpunk, ghibli, evangelion [default: default]
-      --generate-completion <SHELL>            Generate shell completion script [possible values: bash, elvish, fish, powershell, zsh]
-      --benchmark                              Run performance benchmarks
-  -h, --help                                   Print help
-  -V, --version                                Print version
-```
-Usage: jsonfizz [OPTIONS] [FILE]...
-
-Arguments:
-  [FILE]...  Input files (use - for stdin)
-
-Options:
-  -i, --indent <INDENT>                        Indentation spaces [default: 2]
-      --sort-keys                              Sort object keys alphabetically
-  -c, --compact                                Compact (minified) output
-      --max-depth <MAX_DEPTH>                  Limit nesting depth
-      --max-string-length <MAX_STRING_LENGTH>  Truncate long strings
-      --get <GET>                              JSON path query (e.g., data.items[0])
-      --raw                                    Disable colors
-      --format <FORMAT>                        Output format: json, yaml, toml [default: json]
-      --input-format <INPUT_FORMAT>            Input format: json, toml [default: json]
+      --input-format <INPUT_FORMAT>            Input format: json, yaml, toml [default: json]
       --theme <THEME>                          Color theme (see available themes below) [default: default]
   -h, --help                                   Print help
   -V, --version                                Print version

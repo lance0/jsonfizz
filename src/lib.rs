@@ -94,6 +94,8 @@ fn parse_input(input: &str, format: &str) -> Result<serde_json::Value, JsonfizzE
     match format {
         "json" => serde_json::from_str(input)
             .map_err(|e| JsonfizzError::Parse(e)),
+        "yaml" => serde_yaml::from_str(input)
+            .map_err(|e| JsonfizzError::Yaml(format!("YAML parse error: {}", e))),
         "toml" => {
             let toml_value: toml::Value = toml::from_str(input)
                 .map_err(|e| JsonfizzError::Yaml(format!("TOML parse error: {}", e)))?;
@@ -101,7 +103,7 @@ fn parse_input(input: &str, format: &str) -> Result<serde_json::Value, JsonfizzE
             serde_json::to_value(toml_value)
                 .map_err(|e| JsonfizzError::Yaml(format!("TOML to JSON conversion error: {}", e)))
         }
-        _ => Err(JsonfizzError::Config(format!("Unsupported input format: {}. Supported: json, toml", format))),
+        _ => Err(JsonfizzError::Config(format!("Unsupported input format: {}. Supported: json, yaml, toml", format))),
     }
 }
 
@@ -235,6 +237,15 @@ mod tests {
         let toml_input = r#"name = "test"
 version = 1.0"#;
         let value = parse_input(toml_input, "toml").unwrap();
+        assert_eq!(value["name"], "test");
+        assert_eq!(value["version"], 1.0);
+    }
+
+    #[test]
+    fn test_parse_yaml_input() {
+        let yaml_input = r#"name: test
+version: 1.0"#;
+        let value = parse_input(yaml_input, "yaml").unwrap();
         assert_eq!(value["name"], "test");
         assert_eq!(value["version"], 1.0);
     }
